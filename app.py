@@ -95,7 +95,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Título principal
-st.title("😈 ECOH Rekognition - Comparativa Biométrica")
+st.title(" ECOH Rekognition - Comparativa Biométrica")
 st.markdown("<p style='text-align:center; color:#444;'>Compara similitud facial entre dos imágenes usando Amazon Rekognition y genera un informe con los resultados.</p>", unsafe_allow_html=True)
 
 # ==========================
