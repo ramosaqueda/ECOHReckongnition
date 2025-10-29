@@ -9,6 +9,28 @@ from datetime import datetime
 # CONFIGURACIÓN GENERAL
 # ==========================
 st.set_page_config(page_title="ECOH Rekognition", page_icon="😈", layout="wide")
+# Mostrar logo SVG centrado
+import base64
+
+# Ruta local del SVG (debe estar en la misma carpeta que app.py)
+svg_path = "logo_ecoh1.svg"
+
+with open(svg_path, "r", encoding="utf-8") as f:
+    svg_data = f.read()
+
+# Convertir a base64 para evitar problemas en Streamlit Cloud
+svg_base64 = base64.b64encode(svg_data.encode("utf-8")).decode("utf-8")
+
+# Mostrar en HTML centrado
+st.markdown(
+    f"""
+    <div style="display:flex; justify-content:center; align-items:center; margin-top:-20px; margin-bottom:10px;">
+        <img src="data:image/svg+xml;base64,{svg_base64}" alt="ECOH Logo" width="180"/>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
 
 # Estilos personalizados
 st.markdown("""
