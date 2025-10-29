@@ -6,8 +6,8 @@ from PIL import Image
 # ==========================
 # Configuración general
 # ==========================
-st.set_page_config(page_title="AWS Rekognition Comparison", page_icon="🧠", layout="wide")
-st.title("🧠 AWS Rekognition - Face Comparison")
+st.set_page_config(page_title="AWS Rekognition Comparison", page_icon="😈", layout="wide")
+st.title("😈 ECOH  - Rekognition (AWS Rekognition)")
 st.write("Compara similitud facial entre dos imágenes usando Amazon Rekognition.")
 
 # ==========================
