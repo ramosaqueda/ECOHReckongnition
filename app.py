@@ -2,13 +2,16 @@ import streamlit as st
 import boto3
 import time
 from PIL import Image
+import hashlib
+from io import BytesIO
+from datetime import datetime
 
 # ==========================
 # Configuración general
 # ==========================
-st.set_page_config(page_title="AWS Rekognition Comparison", page_icon="😈", layout="wide")
-st.title("😈 ECOH  - Rekognition (AWS Rekognition)")
-st.write("Compara similitud facial entre dos imágenes usando Amazon Rekognition.")
+st.set_page_config(page_title="AWS Rekognition Comparison", page_icon="🧠", layout="wide")
+st.title("🧠 AWS Rekognition - Face Comparison")
+st.write("Compara similitud facial entre dos imágenes usando Amazon Rekognition y genera un informe con los resultados.")
 
 # ==========================
 # Entradas de credenciales AWS
@@ -61,6 +64,10 @@ if st.button("🔍 Comparar Rostros", type="primary"):
             source_bytes = image1_file.getvalue()
             target_bytes = image2_file.getvalue()
 
+            # Calcular hashes SHA1
+            hash1 = hashlib.sha1(source_bytes).hexdigest()
+            hash2 = hashlib.sha1(target_bytes).hexdigest()
+
             # Paso 3: Ejecutar comparación
             status.text("Comparando rostros...")
             progress.progress(70)
@@ -79,13 +86,48 @@ if st.button("🔍 Comparar Rostros", type="primary"):
             # ==========================
             if response.get('FaceMatches'):
                 similarity = response['FaceMatches'][0]['Similarity']
-                st.success(f"🎯 Coincidencia encontrada con **{similarity:.2f}%** de similitud.")
+                result_text = f"🎯 Coincidencia encontrada con **{similarity:.2f}%** de similitud."
+                st.success(result_text)
             else:
-                st.warning("😕 No se encontraron rostros coincidentes.")
+                similarity = None
+                result_text = "😕 No se encontraron rostros coincidentes."
+                st.warning(result_text)
 
-            # Mostrar respuesta completa (debug)
             with st.expander("📄 Respuesta completa de AWS Rekognition"):
                 st.json(response)
+
+            # ==========================
+            # Generar informe TXT
+            # ==========================
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            report_content = f"""
+AWS Rekognition - Informe de Comparación
+========================================
+Fecha y hora: {timestamp}
+
+Región AWS: {region}
+
+Imagen 1: {image1_file.name}
+SHA1: {hash1}
+
+Imagen 2: {image2_file.name}
+SHA1: {hash2}
+
+Resultado:
+{result_text}
+
+Detalles técnicos:
+Coincidencias encontradas: {len(response.get('FaceMatches', []))}
+"""
+
+            # Descargar informe
+            report_bytes = report_content.encode("utf-8")
+            st.download_button(
+                label="📥 Descargar Informe TXT",
+                data=report_bytes,
+                file_name=f"rekognition_report_{int(time.time())}.txt",
+                mime="text/plain"
+            )
 
         except Exception as e:
             st.error(f"Ocurrió un error: {e}")
