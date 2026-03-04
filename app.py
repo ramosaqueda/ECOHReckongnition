@@ -4,32 +4,38 @@ import time
 from PIL import Image
 import hashlib
 from datetime import datetime
+import os
 
 # ==========================
 # CONFIGURACIÓN GENERAL
 # ==========================
 st.set_page_config(page_title="ECOH Rekognition", page_icon="😈", layout="wide")
-# Mostrar logo SVG centrado
+
+# Mostrar logo SVG centrado (con manejo de error)
 import base64
 
-# Ruta local del SVG (debe estar en la misma carpeta que app.py)
 svg_path = "logo_ecoh1.svg"
 
-with open(svg_path, "r", encoding="utf-8") as f:
-    svg_data = f.read()
-
-# Convertir a base64 para evitar problemas en Streamlit Cloud
-svg_base64 = base64.b64encode(svg_data.encode("utf-8")).decode("utf-8")
-
-# Mostrar en HTML centrado
-st.markdown(
-    f"""
-    <div style="display:flex; justify-content:center; align-items:center; margin-top:-20px; margin-bottom:10px;">
-        <img src="data:image/svg+xml;base64,{svg_base64}" alt="ECOH Logo" width="180"/>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+# Verificar si el archivo existe antes de abrirlo
+if os.path.exists(svg_path):
+    try:
+        with open(svg_path, "r", encoding="utf-8") as f:
+            svg_data = f.read()
+        svg_base64 = base64.b64encode(svg_data.encode("utf-8")).decode("utf-8")
+        st.markdown(
+            f"""
+            <div style="display:flex; justify-content:center; align-items:center; margin-top:-20px; margin-bottom:10px;">
+                <img src="data:image/svg+xml;base64,{svg_base64}" alt="ECOH Logo" width="180"/>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+    except Exception as e:
+        st.warning(f"⚠️ No se pudo cargar el logo: {e}")
+else:
+    st.info("ℹ️ Logo no encontrado. Asegúrate de que 'logo_ecoh1.svg' esté en el repositorio.")
+    # Opcional: mostrar un placeholder o título alternativo
+    st.markdown("<h2 style='text-align:center; color:#004388;'>ECOH Rekognition</h2>", unsafe_allow_html=True)
 
 
 # Estilos personalizados
@@ -94,8 +100,12 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Título principal
-st.title(" ECOH Rekognition - Comparativa Biométrica")
+# Título principal (solo si no se mostró el logo)
+if os.path.exists(svg_path):
+    st.title(" ECOH Rekognition - Comparativa Biométrica")
+else:
+    st.title(" Comparativa Biométrica")
+    
 st.markdown("<p style='text-align:center; color:#444;'>Compara similitud facial entre dos imágenes usando Amazon Rekognition y genera un informe con los resultados.</p>", unsafe_allow_html=True)
 
 # ==========================
@@ -107,9 +117,19 @@ col_config, col_images, col_results = st.columns([1, 2, 1])
 with col_config:
     st.markdown("<div class='section-card'>", unsafe_allow_html=True)
     st.subheader("⚙️ Configuración AWS")
-    access_key = st.text_input("Access Key ID", placeholder="AWS_ACCESS_KEY_ID")
-    secret_key = st.text_input("Secret Access Key", type="password", placeholder="AWS_SECRET_ACCESS_KEY")
-    region = st.text_input("Región AWS", placeholder="us-east-1")
+    
+    # Opción para usar secrets de Streamlit
+    try:
+        aws_secrets = st.secrets["aws"]
+        access_key = aws_secrets["access_key_id"]
+        secret_key = aws_secrets["secret_access_key"]
+        region = aws_secrets["region"]
+        st.success("✅ Credenciales cargadas desde Secrets")
+    except:
+        access_key = st.text_input("Access Key ID", placeholder="AWS_ACCESS_KEY_ID")
+        secret_key = st.text_input("Secret Access Key", type="password", placeholder="AWS_SECRET_ACCESS_KEY")
+        region = st.text_input("Región AWS", placeholder="us-east-1")
+    
     st.markdown("</div>", unsafe_allow_html=True)
 
 # ---------- CENTRO: Imágenes ----------
@@ -121,20 +141,26 @@ with col_images:
     with col1:
         image1_file = st.file_uploader("Imagen 1", type=["png", "jpg", "jpeg"], key="img1")
         if image1_file:
-            image1 = Image.open(image1_file)
-            max_width = 250
-            ratio = max_width / image1.width
-            resized = image1.resize((max_width, int(image1.height * ratio)))
-            st.image(resized, caption="Imagen 1", use_container_width=False)
+            try:
+                image1 = Image.open(image1_file)
+                max_width = 250
+                ratio = max_width / image1.width
+                resized = image1.resize((max_width, int(image1.height * ratio)))
+                st.image(resized, caption="Imagen 1", use_container_width=False)
+            except Exception as e:
+                st.error(f"Error al cargar imagen 1: {e}")
 
     with col2:
         image2_file = st.file_uploader("Imagen 2", type=["png", "jpg", "jpeg"], key="img2")
         if image2_file:
-            image2 = Image.open(image2_file)
-            max_width = 250
-            ratio = max_width / image2.width
-            resized = image2.resize((max_width, int(image2.height * ratio)))
-            st.image(resized, caption="Imagen 2", use_container_width=False)
+            try:
+                image2 = Image.open(image2_file)
+                max_width = 250
+                ratio = max_width / image2.width
+                resized = image2.resize((max_width, int(image2.height * ratio)))
+                st.image(resized, caption="Imagen 2", use_container_width=False)
+            except Exception as e:
+                st.error(f"Error al cargar imagen 2: {e}")
 
     st.markdown("</div>", unsafe_allow_html=True)
 
@@ -173,6 +199,11 @@ if start:
             )
 
             progress.progress(25)
+            
+            # Resetear punteros de archivo por si acaso
+            image1_file.seek(0)
+            image2_file.seek(0)
+            
             source_bytes = image1_file.getvalue()
             target_bytes = image2_file.getvalue()
 
@@ -231,4 +262,5 @@ ECOH Rekognition - Informe de Comparativa Biométrica
             )
 
         except Exception as e:
-            st.error(f"Ocurrió un error: {e}")
+            st.error(f"❌ Ocurrió un error: {str(e)}")
+            st.exception(e)  # Muestra el traceback completo para debugging
